@@ -111,12 +111,11 @@ class P1:
 
     def backpropagate(self, node, value):
         while node:
-            node.visits += 1
-            print(f"node's visit: {node.visits:>4}")  # test_page
+            node.visits += 1            
             node.value += value
-            print(f"node's value: {node.value:>4}")  # test_page
+            print(f"node's visit: {node.visits:>4}, node's value: {node.value:>4}")  # test_page
             node = node.parent
-        print("--")
+        #print("--")
 
     def uct_select(self, node):
         for child in node.children:
