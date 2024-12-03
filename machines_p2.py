@@ -10,11 +10,9 @@ import copy
 class MCTSNode:
     def __init__(self, board, available_pieces, parent=None, move=None):
         self.board = board
-        print(f"p2 board: {self.board}")
         self.available_pieces = available_pieces
         self.parent = parent
         self.move = move
-        print(f"p2 move: {self.move}")
         self.children = []
         self.visits = 0
         self.value = 0
@@ -66,7 +64,6 @@ class P2:
         )        
         # best_child = max(valid_children, key=lambda c: c.visits)
         # best_child = min(root.children, key=lambda c: c.value)
-        print(f"p2 select_best_child: {best_child}")
         return best_child.move[0]
 
     def place_piece(self, selected_piece):
@@ -81,7 +78,6 @@ class P2:
 
         best_child = max(root.children, key=lambda c: c.visits)
         # print("root's value: " + str(root.value))  # test_page
-        print(f"p2 place_best_child: {best_child}")
         return best_child.move[1]
 
     def select(self, node, piece):
