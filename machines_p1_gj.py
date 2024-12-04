@@ -16,7 +16,6 @@ class MCTSNode:
         self.children = []
         self.visits = 0
         self.value = 0
-        self.move_count = 0
 
 
 class P1:
@@ -24,15 +23,23 @@ class P1:
         self.pieces = [(i, j, k, l) for i in range(2) for j in range(2) for k in range(2) for l in range(2)]
         self.board = board
         self.available_pieces = available_pieces
-        self.simulation_count = 100  # Default : 1,000
+        self.simulation_time = 0.5  # Default : 5 AND Max : 9
         self.exploration_constant = 0.75
+        self.move_count = 0
+        self.turn = 0
 
     def select_piece(self):
         root = MCTSNode(self.board, self.available_pieces)
+        self.turn = 0
 
-        for _ in range(self.simulation_count):
+        end_time = time.time() + self.simulation_time
+
+        while time.time() < end_time:
+            self.move_count = 0  # Manage all process count
+
             node = self.select(root, None)
-            value = 1 - self.simulate(node)
+            value = self.simulate(node)
+            # value = 1 - self.simulate(node)
             self.backpropagate(node, value)
 
         best_child = max(root.children, key=lambda c: c.value)
@@ -40,10 +47,14 @@ class P1:
 
     def place_piece(self, selected_piece):
         root = MCTSNode(self.board, self.available_pieces)
+        self.turn = 1
         print(selected_piece)  # test_page
 
-        for _ in range(self.simulation_count):
-            move_count = 0  # Manage all process count
+        end_time = time.time() + self.simulation_time
+
+        while time.time() < end_time:
+            self.move_count = 0  # Manage all process count
+
             node = self.select(root, selected_piece)
             value = self.simulate(node)
             self.backpropagate(node, value)
@@ -58,34 +69,33 @@ class P1:
             piece = random.choice(self.available_pieces)
 
         while node.children:
-            # print("children exist")  # test_pages
-            '''
-            # Additional child node extensions
-            if not all(child.visits > 0 for child in node.children):
-                print("[Message] children exist but not visits")  # test_pages
-                return self.expand(node, piece)
-            '''
             node = self.uct_select(node)
-            return node  # test_page
-            # break  # test_page
+
+            if node.visits > 0:
+                self.move_count += 1
+                node = self.expand(node, piece)
+
+            return node
 
         print("[Message] no children")  # test_page
+        self.move_count += 1
         return self.expand(node, piece)
 
     def expand(self, node, piece):
         if self.is_terminal(node.board):
             return node
 
-        for row, col in product(range(4), repeat=2):
-            if node.board[row][col] == 0:
-                new_board = copy.deepcopy(node.board)
+        empty_cells = [(r, c) for r, c in product(range(4), repeat=2) if node.board[r][c] == 0]
 
-                new_board[row][col] = self.pieces.index(piece) + 1
-                new_available_pieces = node.available_pieces[:]
+        for row, col in empty_cells:
+            new_board = copy.deepcopy(node.board)
 
-                print(f"add children in row: {row} col: {col}")  # test_page
-                child = MCTSNode(new_board, new_available_pieces, node, (piece, (row, col)))
-                node.children.append(child)
+            new_board[row][col] = self.pieces.index(piece) + 1
+            new_available_pieces = node.available_pieces[:]
+
+            # print(f"add children in row: {row} col: {col}")  # test_page
+            child = MCTSNode(new_board, new_available_pieces, node, (piece, (row, col)))
+            node.children.append(child)
 
         return self.uct_select(node)
         # return random.choice(node.children)
@@ -93,7 +103,6 @@ class P1:
     def simulate(self, node):
         board = copy.deepcopy(node.board)
         available_pieces = node.available_pieces[:]
-        move_count = 0
 
         while not self.is_terminal(board) and available_pieces:
             piece = random.choice(available_pieces)
@@ -105,17 +114,19 @@ class P1:
             row, col = random.choice(empty_cells)
             board[row][col] = self.pieces.index(piece) + 1
             available_pieces.remove(piece)
-            move_count = move_count + 1
+            self.move_count += 1
 
-        return self.evaluate(move_count)
+        return self.evaluate(self.move_count)
 
     def backpropagate(self, node, value):
         while node:
-            node.visits += 1            
+            node.visits += 1
+            print(f"node's visit: {node.visits:>5}")  # test_page
             node.value += value
-            print(f"node's visit: {node.visits:>4}, node's value: {node.value:>4}")  # test_page
+            print(f"node's value: {node.value:>5}")  # test_page
+            value = 1 - value
             node = node.parent
-        #print("--")
+        print("--")
 
     def uct_select(self, node):
         for child in node.children:
@@ -174,7 +185,9 @@ class P1:
         return False
 
     def evaluate(self, count):
-        if count % 2 == 0:
+        if self.turn == 1 and count % 2 == 1:
+            return 1  # 승
+        elif self.turn == 0 and count % 2 == 0:
             return 1  # 승
         else:
             return 0  # 패
