@@ -2,8 +2,8 @@ import sys
 import pygame
 import numpy as np
 
-from machines_p1_bh import P1
-from machines_p2_hr import P2
+from machines_p1_hw import P1
+from machines_p1_bh import P2
 
 import time
 
